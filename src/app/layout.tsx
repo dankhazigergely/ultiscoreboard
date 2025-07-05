@@ -3,7 +3,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: 'UltiScoreboard',
+  title: 'UltiMóka',
   description: 'A simple scoreboard for the card game Ulti.',
 };
 

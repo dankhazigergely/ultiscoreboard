@@ -7,7 +7,7 @@ import Scoreboard from "@/components/scoreboard";
 import ScoringRules from "@/components/scoring-rules";
 import { Crown } from "lucide-react";
 
-const GAME_STATE_KEY = 'ultiScoreboardGameState';
+const GAME_STATE_KEY = 'ultiMokaGameState';
 
 export default function Home() {
   const [gameStarted, setGameStarted] = useState(false);
@@ -102,7 +102,7 @@ export default function Home() {
           <div className="flex items-center justify-center gap-4">
              <Crown className="w-12 h-12 text-primary" />
              <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-primary tracking-tight">
-               UltiScoreboard
+               UltiMóka
              </h1>
           </div>
           <p className="mt-2 text-lg text-muted-foreground">
