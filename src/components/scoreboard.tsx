@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Player, Round } from "@/lib/types";
+import { scoringData, parseScoreValue } from "@/lib/scoring";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -16,8 +17,9 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Crown, PlusCircle, RotateCw, Swords, Trophy, Download } from "lucide-react";
+import { Crown, PlusCircle, RotateCw, Swords, Trophy, Download, ArrowRight, ArrowLeft } from "lucide-react";
 import ScoreHistory from "./score-history";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -38,54 +40,70 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
   const [ultiPlayerId, setUltiPlayerId] = useState<number | null>(null);
   const [kontraPlayerId, setKontraPlayerId] = useState<number | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [isInitialInput, setIsInitialInput] = useState(true);
   const { toast } = useToast();
+
+  // State for the new 2-step dialog
+  const [step, setStep] = useState(1);
+  const [selectedGamePlayerId, setSelectedGamePlayerId] = useState<string | null>(null);
+  const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
+  const [gameWon, setGameWon] = useState<"yes" | "no">("yes");
+
 
   const handleScoreChange = (playerId: number, value: string) => {
     const newScores = new Map(roundScores);
-
-    if (isInitialInput) {
-      const newInitialScores = new Map<number, string>();
-      players.forEach(p => newInitialScores.set(p.id, ""));
-      newInitialScores.set(playerId, value);
-      setRoundScores(newInitialScores);
-    } else {
-      newScores.set(playerId, value);
-      setRoundScores(newScores);
-    }
+    newScores.set(playerId, value);
+    setRoundScores(newScores);
   };
   
-  const handleScoreBlur = (playerId: number) => {
-    if (!isInitialInput) return;
+  const handleNextStep = () => {
+    if (!selectedGamePlayerId || !selectedGameId) {
+      toast({
+        title: "Hiányzó adatok",
+        description: "Kérlek válassz játékost és játékot a folytatáshoz.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const mainPlayerId = parseInt(selectedGamePlayerId, 10);
+    const game = scoringData.find(g => g.id === parseInt(selectedGameId, 10));
+    if (!game) return;
+    
+    let baseScore = parseScoreValue(game.value);
+    
+    // Handle Kontra - doubles the score
+    if (kontraPlayerId !== null) {
+      baseScore *= 2;
+    }
 
-    const value = roundScores.get(playerId);
-    if (!value || value.trim() === "") return;
-
-    const score = parseInt(value, 10);
-    if (isNaN(score)) return;
-
-    const newScores = new Map(roundScores);
-    const scoreToDistribute = -score;
-    const otherPlayers = players.filter((p) => p.id !== playerId);
+    const newScores = new Map<number, string>();
+    const otherPlayers = players.filter(p => p.id !== mainPlayerId);
     const numOtherPlayers = otherPlayers.length;
 
-    if (numOtherPlayers > 0) {
-      const baseScore = Math.trunc(scoreToDistribute / numOtherPlayers);
-      let remainder = scoreToDistribute % numOtherPlayers;
-
-      otherPlayers.forEach((p) => {
-        let distributedScore = baseScore;
-        if (remainder !== 0) {
-          distributedScore += Math.sign(remainder);
-          remainder -= Math.sign(remainder);
-        }
-        newScores.set(p.id, String(distributedScore));
-      });
+    if (gameWon === 'yes') {
+      newScores.set(String(mainPlayerId), String(baseScore * numOtherPlayers));
+      otherPlayers.forEach(p => newScores.set(String(p.id), String(-baseScore)));
+    } else { // gameLost
+      newScores.set(String(mainPlayerId), String(-baseScore * numOtherPlayers));
+      otherPlayers.forEach(p => newScores.set(String(p.id), String(baseScore)));
     }
-    setRoundScores(newScores);
-    setIsInitialInput(false);
-  };
 
+    const finalScores = new Map<number, string>();
+    newScores.forEach((value, key) => {
+      finalScores.set(parseInt(key, 10), value);
+    });
+
+    setRoundScores(finalScores);
+    
+    // Automatically set ulti player if the game involves it
+    if (game.name.toLowerCase().includes("ulti") || game.name.toLowerCase().includes("ultimó")) {
+      setUltiPlayerId(mainPlayerId);
+    } else {
+      setUltiPlayerId(null);
+    }
+    
+    setStep(2);
+  }
 
   const handleAddRoundSubmit = () => {
     const scores = players.map((p) => ({
@@ -110,10 +128,14 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
   const handleDialogOpenChange = (isOpen: boolean) => {
     setDialogOpen(isOpen);
     if (isOpen) {
-        setRoundScores(new Map(players.map(p => [p.id, ""])));
+        // Reset all states for the dialog
+        setStep(1);
+        setRoundScores(new Map());
         setUltiPlayerId(null);
         setKontraPlayerId(null);
-        setIsInitialInput(true);
+        setSelectedGamePlayerId(null);
+        setSelectedGameId(null);
+        setGameWon("yes");
     }
   }
 
@@ -226,61 +248,107 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Új Kör Pontszámai</DialogTitle>
-              <DialogDescription>
-                Adja meg az egyes játékosok által ebben a körben szerzett vagy elvesztett pontokat. Az összegnek 0-nak kell lennie.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              {players.map((player) => (
-                <div key={player.id} className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor={`score-${player.id}`} className="text-right col-span-1 truncate pr-2">
-                    {player.name}
-                  </Label>
-                  <Input
-                    id={`score-${player.id}`}
-                    type="number"
-                    step="1"
-                    placeholder="0"
-                    className="col-span-3"
-                    value={roundScores.get(player.id) || ""}
-                    onChange={(e) => handleScoreChange(player.id, e.target.value)}
-                    onBlur={() => handleScoreBlur(player.id)}
-                  />
+            {step === 1 && (
+              <>
+                <DialogHeader>
+                  <DialogTitle>Új Kör (1/2): Játék részletei</DialogTitle>
+                  <DialogDescription>
+                    Válassza ki a játékost, a bemondott játékot és az eredményt.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="game-player">Játékos</Label>
+                    <Select onValueChange={setSelectedGamePlayerId} value={selectedGamePlayerId || undefined}>
+                      <SelectTrigger id="game-player">
+                        <SelectValue placeholder="Válasszon játékost" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {players.map(p => <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="game-type">Játék típusa</Label>
+                    <Select onValueChange={setSelectedGameId} value={selectedGameId || undefined}>
+                      <SelectTrigger id="game-type">
+                        <SelectValue placeholder="Válasszon játékot" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {scoringData.map(g => <SelectItem key={g.id} value={String(g.id)}>{g.name} ({g.value} pont)</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                   <div className="space-y-2">
+                    <Label>Eredmény</Label>
+                    <RadioGroup defaultValue="yes" onValueChange={(val: "yes" | "no") => setGameWon(val)} className="flex gap-4">
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="yes" id="r-won" />
+                            <Label htmlFor="r-won">Nyert</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="no" id="r-lost" />
+                            <Label htmlFor="r-lost">Vesztett</Label>
+                        </div>
+                    </RadioGroup>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="kontra-caller" className="flex items-center gap-1"><Swords className="h-4 w-4" /> Kontrát mondott (opcionális)</Label>
+                    <Select onValueChange={(val) => setKontraPlayerId(val === "none" ? null : Number(val))}>
+                      <SelectTrigger id="kontra-caller">
+                        <SelectValue placeholder="Válasszon játékost" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Nincs</SelectItem>
+                        {players.filter(p => p.id !== (selectedGamePlayerId ? parseInt(selectedGamePlayerId) : -1)).map(p => <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-              ))}
-              <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="ulti-caller" className="text-right col-span-1 flex items-center justify-end gap-1"><Crown className="h-4 w-4" /> Ulti</Label>
-                  <Select onValueChange={(val) => setUltiPlayerId(val === "none" ? null : Number(val))}>
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="Válasszon játékost" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Nincs</SelectItem>
-                      {players.map(p => <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="kontra-caller" className="text-right col-span-1 flex items-center justify-end gap-1"><Swords className="h-4 w-4" /> Kontra</Label>
-                   <Select onValueChange={(val) => setKontraPlayerId(val === "none" ? null : Number(val))}>
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="Válasszon játékost" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Nincs</SelectItem>
-                      {players.map(p => <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-              </div>
-            </div>
-            <DialogFooter>
-              <DialogClose asChild>
-                <Button variant="outline">Mégse</Button>
-              </DialogClose>
-              <Button type="submit" onClick={handleAddRoundSubmit} className="bg-accent hover:bg-accent/90">Kör Mentése</Button>
-            </DialogFooter>
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button variant="outline">Mégse</Button>
+                  </DialogClose>
+                  <Button onClick={handleNextStep} className="bg-accent hover:bg-accent/90">
+                    Tovább <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </DialogFooter>
+              </>
+            )}
+            {step === 2 && (
+              <>
+                <DialogHeader>
+                  <DialogTitle>Új Kör (2/2): Pontok</DialogTitle>
+                  <DialogDescription>
+                    Ellenőrizze vagy módosítsa a pontokat. Az összegnek 0-nak kell lennie.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  {players.map((player) => (
+                    <div key={player.id} className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor={`score-${player.id}`} className="text-right col-span-1 truncate pr-2">
+                        {player.name}
+                      </Label>
+                      <Input
+                        id={`score-${player.id}`}
+                        type="number"
+                        step="1"
+                        placeholder="0"
+                        className="col-span-3"
+                        value={roundScores.get(player.id) || ""}
+                        onChange={(e) => handleScoreChange(player.id, e.target.value)}
+                      />
+                    </div>
+                  ))}
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setStep(1)}>
+                    <ArrowLeft className="mr-2 h-4 w-4" /> Vissza
+                  </Button>
+                  <Button type="submit" onClick={handleAddRoundSubmit} className="bg-accent hover:bg-accent/90">Kör Mentése</Button>
+                </DialogFooter>
+              </>
+            )}
           </DialogContent>
         </Dialog>
         
@@ -307,7 +375,6 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-
       </div>
       
       <ScoreHistory players={players} rounds={rounds} />
