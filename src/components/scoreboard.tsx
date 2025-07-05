@@ -421,5 +421,3 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
     </div>
   );
 }
-
-    
