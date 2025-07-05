@@ -23,6 +23,8 @@ export const scoringData: ScoringRule[] = [
     { id: 16, name: "terített durchmars", value: "24" },
 ];
 
+export const colorlessGameIds = [6, 7, 12, 13, 15, 16];
+
 export const parseScoreValue = (value: string): number => {
     if (value.includes('+')) {
         return value.split('+').reduce((sum, part) => sum + parseInt(part, 10), 0);

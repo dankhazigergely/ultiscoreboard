@@ -79,10 +79,10 @@ export default function ScoreHistory({ players, rounds }: ScoreHistoryProps) {
                                       <span className="hidden sm:inline">{getPlayerName(round.ultiPlayerId)}</span>
                                   </Badge>
                               )}
-                              {round.kontraPlayerId !== null && round.kontraPlayerId !== undefined && (
+                              {round.kontraPlayerIds && round.kontraPlayerIds.length > 0 && (
                                   <Badge variant="secondary" className="flex items-center gap-1 bg-red-100 text-red-800 border-red-200">
                                       <Swords className="h-3 w-3" />
-                                      <span className="hidden sm:inline">{getPlayerName(round.kontraPlayerId)}</span>
+                                      <span className="hidden sm:inline">{round.kontraPlayerIds.map(id => getPlayerName(id)).join(', ')}</span>
                                   </Badge>
                               )}
                             </div>

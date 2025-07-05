@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { Player, Round } from "@/lib/types";
-import { scoringData, parseScoreValue } from "@/lib/scoring";
+import { scoringData, parseScoreValue, colorlessGameIds } from "@/lib/scoring";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -23,6 +23,8 @@ import { Crown, PlusCircle, RotateCw, Swords, Trophy, Download, ArrowRight, Arro
 import ScoreHistory from "./score-history";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 
 interface ScoreboardProps {
   players: Player[];
@@ -30,7 +32,7 @@ interface ScoreboardProps {
   onAddRound: (
     scores: { playerId: number; change: number }[],
     ultiPlayerId?: number | null,
-    kontraPlayerId?: number | null
+    kontraPlayerIds?: number[] | null
   ) => void;
   onResetGame: () => void;
 }
@@ -38,11 +40,10 @@ interface ScoreboardProps {
 export default function Scoreboard({ players, rounds, onAddRound, onResetGame }: ScoreboardProps) {
   const [roundScores, setRoundScores] = useState<Map<number, string>>(new Map());
   const [ultiPlayerId, setUltiPlayerId] = useState<number | null>(null);
-  const [kontraPlayerId, setKontraPlayerId] = useState<number | null>(null);
+  const [kontraPlayerIds, setKontraPlayerIds] = useState<number[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const { toast } = useToast();
 
-  // State for the new 2-step dialog
   const [step, setStep] = useState(1);
   const [selectedGamePlayerId, setSelectedGamePlayerId] = useState<string | null>(null);
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
@@ -71,9 +72,16 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
     
     let baseScore = parseScoreValue(game.value);
     
-    // Handle Kontra - doubles the score
-    if (kontraPlayerId !== null) {
-      baseScore *= 2;
+    const isColorless = colorlessGameIds.includes(game.id);
+    if (kontraPlayerIds.length > 0) {
+      if (isColorless) {
+        // For colorless games, score doubles for each kontra (2^n)
+        const multiplier = 2 ** kontraPlayerIds.length;
+        baseScore *= multiplier;
+      } else {
+        // For color games, simple double
+        baseScore *= 2;
+      }
     }
 
     const newScores = new Map<number, string>();
@@ -103,7 +111,7 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
     }
     
     setStep(2);
-  }
+  };
 
   const handleAddRoundSubmit = () => {
     const scores = players.map((p) => ({
@@ -121,7 +129,7 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
       return;
     }
 
-    onAddRound(scores, ultiPlayerId, kontraPlayerId);
+    onAddRound(scores, ultiPlayerId, kontraPlayerIds);
     setDialogOpen(false);
   };
 
@@ -132,12 +140,12 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
         setStep(1);
         setRoundScores(new Map());
         setUltiPlayerId(null);
-        setKontraPlayerId(null);
+        setKontraPlayerIds([]);
         setSelectedGamePlayerId(null);
         setSelectedGameId(null);
         setGameWon("yes");
     }
-  }
+  };
 
   const handleExportCSV = () => {
     if (rounds.length === 0) {
@@ -157,9 +165,14 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
       return strCell;
     };
 
-    const getPlayerName = (id: number | null | undefined) => {
+    const getPlayerName = (id: number | null | undefined): string => {
       if (id === null || id === undefined) return '';
       return players.find(p => p.id === id)?.name || '';
+    };
+
+    const getKontraPlayerNames = (ids: number[] | null | undefined): string => {
+        if (!ids || ids.length === 0) return '';
+        return ids.map(id => getPlayerName(id)).join(', ');
     };
 
     const headers = [
@@ -177,7 +190,7 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
           return score ? score.change : 0;
         }),
         escapeCsvCell(getPlayerName(round.ultiPlayerId)),
-        escapeCsvCell(getPlayerName(round.kontraPlayerId))
+        escapeCsvCell(getKontraPlayerNames(round.kontraPlayerIds))
       ];
       return rowData.join(',');
     });
@@ -191,7 +204,7 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
 
     let csvContent = headers + '\n' + rows.join('\n') + '\n' + totalsRow;
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob([`\uFEFF${csvContent}`], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
     link.setAttribute("href", url);
@@ -219,6 +232,10 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
   };
 
   const leaderId = getLeaderId();
+
+  const mainPlayerId = selectedGamePlayerId ? parseInt(selectedGamePlayerId, 10) : null;
+  const otherPlayers = mainPlayerId !== null ? players.filter(p => p.id !== mainPlayerId) : [];
+  const isColorless = selectedGameId ? colorlessGameIds.includes(parseInt(selectedGameId, 10)) : false;
 
   return (
     <div className="space-y-8 animate-in fade-in-50 duration-500">
@@ -292,18 +309,44 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
                         </div>
                     </RadioGroup>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="kontra-caller" className="flex items-center gap-1"><Swords className="h-4 w-4" /> Kontrát mondott (opcionális)</Label>
-                    <Select onValueChange={(val) => setKontraPlayerId(val === "none" ? null : Number(val))}>
-                      <SelectTrigger id="kontra-caller">
-                        <SelectValue placeholder="Válasszon játékost" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">Nincs</SelectItem>
-                        {players.filter(p => p.id !== (selectedGamePlayerId ? parseInt(selectedGamePlayerId) : -1)).map(p => <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
+
+                  {selectedGamePlayerId && selectedGameId && (
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-1"><Swords className="h-4 w-4" /> Kontra</Label>
+                      {isColorless ? (
+                        <div className="space-y-2 rounded-md border p-4">
+                            <Label className="text-sm text-muted-foreground">Ki mondott kontrát?</Label>
+                            {otherPlayers.map(p => (
+                                <div key={p.id} className="flex items-center space-x-2 pt-2">
+                                    <Checkbox
+                                        id={`kontra-check-${p.id}`}
+                                        checked={kontraPlayerIds.includes(p.id)}
+                                        onCheckedChange={(checked) => {
+                                            const newIds = checked 
+                                                ? [...kontraPlayerIds, p.id] 
+                                                : kontraPlayerIds.filter(id => id !== p.id);
+                                            setKontraPlayerIds(newIds);
+                                        }}
+                                    />
+                                    <Label htmlFor={`kontra-check-${p.id}`} className="font-normal">{p.name}</Label>
+                                </div>
+                            ))}
+                        </div>
+                      ) : (
+                        <div className="flex items-center space-x-2 rounded-md border p-4 justify-between">
+                            <Label htmlFor="kontra-switch" className="font-normal">Mindenki kontrázott?</Label>
+                            <Switch
+                                id="kontra-switch"
+                                checked={kontraPlayerIds.length > 0}
+                                onCheckedChange={(checked) => {
+                                    setKontraPlayerIds(checked ? otherPlayers.map(p => p.id) : []);
+                                }}
+                            />
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                 </div>
                 <DialogFooter>
                   <DialogClose asChild>
@@ -367,7 +410,7 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
               <AlertDialogTitle>Biztosan törli a játékot?</AlertDialogTitle>
               <AlertDialogDescription>
                 Ez a művelet nem vonható vissza. Ezzel véglegesen törli a jelenlegi játékadatokat.
-              </AlertDialogDescription>
+              </Description>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Mégse</AlertDialogCancel>

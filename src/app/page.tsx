@@ -55,7 +55,7 @@ export default function Home() {
   const handleAddRound = (
     scores: { playerId: number; change: number }[],
     ultiPlayerId?: number | null,
-    kontraPlayerId?: number | null
+    kontraPlayerIds?: number[] | null
   ) => {
     const updatedPlayers = players.map((player) => {
       const scoreChange = scores.find((s) => s.playerId === player.id)?.change || 0;
@@ -67,7 +67,7 @@ export default function Home() {
       roundNumber: rounds.length + 1,
       scores,
       ultiPlayerId,
-      kontraPlayerId,
+      kontraPlayerIds,
     };
     setRounds([...rounds, newRound]);
   };
