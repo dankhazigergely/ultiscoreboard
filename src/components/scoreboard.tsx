@@ -61,41 +61,28 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
     if (!isInitialInput) return;
 
     const value = roundScores.get(playerId);
-    if (!value || value.trim() === '') return;
+    if (!value || value.trim() === "") return;
 
     const score = parseInt(value, 10);
     if (isNaN(score)) return;
 
-    if (score >= 0) {
-      toast({
-        title: 'Helytelen bevitel',
-        description: 'Az első pontszámnak negatívnak kell lennie.',
-        variant: 'destructive',
-      });
-      // Clear all fields to restart the initial input process
-      const newScores = new Map<number, string>();
-      players.forEach(p => newScores.set(p.id, ""));
-      setRoundScores(newScores);
-      return;
-    }
-
-    // score < 0
     const newScores = new Map(roundScores);
     const scoreToDistribute = -score;
-    const otherPlayers = players.filter(p => p.id !== playerId);
+    const otherPlayers = players.filter((p) => p.id !== playerId);
     const numOtherPlayers = otherPlayers.length;
 
     if (numOtherPlayers > 0) {
-        const baseScore = Math.floor(scoreToDistribute / numOtherPlayers);
-        let remainder = scoreToDistribute % numOtherPlayers;
+      const baseScore = Math.trunc(scoreToDistribute / numOtherPlayers);
+      let remainder = scoreToDistribute % numOtherPlayers;
 
-        otherPlayers.forEach(p => {
-            const distributedScore = baseScore + (remainder > 0 ? 1 : 0);
-            newScores.set(p.id, String(distributedScore));
-            if (remainder > 0) {
-                remainder--;
-            }
-        });
+      otherPlayers.forEach((p) => {
+        let distributedScore = baseScore;
+        if (remainder !== 0) {
+          distributedScore += Math.sign(remainder);
+          remainder -= Math.sign(remainder);
+        }
+        newScores.set(p.id, String(distributedScore));
+      });
     }
     setRoundScores(newScores);
     setIsInitialInput(false);
