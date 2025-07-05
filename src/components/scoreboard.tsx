@@ -367,7 +367,7 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
               <AlertDialogTitle>Biztosan törli a játékot?</AlertDialogTitle>
               <AlertDialogDescription>
                 Ez a művelet nem vonható vissza. Ezzel véglegesen törli a jelenlegi játékadatokat.
-              </Description>
+              </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Mégse</AlertDialogCancel>
@@ -381,3 +381,5 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
     </div>
   );
 }
+
+    
