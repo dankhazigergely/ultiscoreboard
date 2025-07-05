@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -72,14 +73,12 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
     
     let baseScore = parseScoreValue(game.value);
     
-    const isColorless = colorlessGameIds.includes(game.id);
+    const isColorlessGame = colorlessGameIds.includes(game.id);
     if (kontraPlayerIds.length > 0) {
-      if (isColorless) {
-        // For colorless games, score doubles for each kontra (2^n)
+      if (isColorlessGame) {
         const multiplier = 2 ** kontraPlayerIds.length;
         baseScore *= multiplier;
       } else {
-        // For color games, simple double
         baseScore *= 2;
       }
     }
@@ -103,7 +102,6 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
 
     setRoundScores(finalScores);
     
-    // Automatically set ulti player if the game involves it
     if (game.name.toLowerCase().includes("ulti") || game.name.toLowerCase().includes("ultimó")) {
       setUltiPlayerId(mainPlayerId);
     } else {
@@ -136,7 +134,6 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
   const handleDialogOpenChange = (isOpen: boolean) => {
     setDialogOpen(isOpen);
     if (isOpen) {
-        // Reset all states for the dialog
         setStep(1);
         setRoundScores(new Map());
         setUltiPlayerId(null);
@@ -287,7 +284,7 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="game-type">Játék típusa</Label>
-                    <Select onValueChange={setSelectedGameId} value={selectedGameId || undefined}>
+                    <Select onValueChange={(value) => { setSelectedGameId(value); setKontraPlayerIds([]); }} value={selectedGameId || undefined}>
                       <SelectTrigger id="game-type">
                         <SelectValue placeholder="Válasszon játékot" />
                       </SelectTrigger>
@@ -424,3 +421,5 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
     </div>
   );
 }
+
+    
