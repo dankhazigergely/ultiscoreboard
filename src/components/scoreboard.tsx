@@ -89,26 +89,36 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
 
     let baseScore = parseScoreValue(game.value);
     const isColorlessGame = colorlessGameIds.includes(game.id);
-
-    if (kontraPlayerIds.length > 0) {
-      if (isColorlessGame) {
-        const multiplier = 2 ** kontraPlayerIds.length;
-        baseScore *= multiplier;
-      } else {
-        baseScore *= 2;
-      }
-    }
-
     const newScores = new Map<number, string>();
     const otherPlayers = players.filter(p => p.id !== mainPlayerIdNum);
-    const numOtherPlayers = otherPlayers.length;
 
-    if (gameWon === 'yes') {
-      newScores.set(mainPlayerIdNum, String(baseScore * numOtherPlayers));
-      otherPlayers.forEach(p => newScores.set(p.id, String(-baseScore)));
+    if (isColorlessGame) {
+      let mainPlayerTotalChange = 0;
+      otherPlayers.forEach(p => {
+        const isKontraPlayer = kontraPlayerIds.includes(p.id);
+        const scoreForThisPlayer = isKontraPlayer ? baseScore * 2 : baseScore;
+
+        if (gameWon === 'yes') {
+          newScores.set(p.id, String(-scoreForThisPlayer));
+          mainPlayerTotalChange += scoreForThisPlayer;
+        } else {
+          newScores.set(p.id, String(scoreForThisPlayer));
+          mainPlayerTotalChange -= scoreForThisPlayer;
+        }
+      });
+      newScores.set(mainPlayerIdNum, String(mainPlayerTotalChange));
     } else {
-      newScores.set(mainPlayerIdNum, String(-baseScore * numOtherPlayers));
-      otherPlayers.forEach(p => newScores.set(p.id, String(baseScore)));
+      if (kontraPlayerIds.length > 0) {
+        baseScore *= 2;
+      }
+      const numOtherPlayers = otherPlayers.length;
+      if (gameWon === 'yes') {
+        newScores.set(mainPlayerIdNum, String(baseScore * numOtherPlayers));
+        otherPlayers.forEach(p => newScores.set(p.id, String(-baseScore)));
+      } else {
+        newScores.set(mainPlayerIdNum, String(-baseScore * numOtherPlayers));
+        otherPlayers.forEach(p => newScores.set(p.id, String(baseScore)));
+      }
     }
 
     setRoundScores(newScores);
@@ -381,5 +391,3 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
     </div>
   );
 }
-
-    
