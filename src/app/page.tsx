@@ -56,7 +56,8 @@ export default function Home() {
     scores: { playerId: number; change: number }[],
     ultiPlayerId?: number | null,
     kontraPlayerIds?: number[] | null,
-    sittingOutPlayerId?: number | null
+    sittingOutPlayerId?: number | null,
+    gameId?: number | null
   ) => {
     const updatedPlayers = players.map((player) => {
       const scoreChange = scores.find((s) => s.playerId === player.id)?.change || 0;
@@ -70,6 +71,7 @@ export default function Home() {
       ultiPlayerId,
       kontraPlayerIds,
       sittingOutPlayerId,
+      gameId,
     };
     setRounds([...rounds, newRound]);
   };
@@ -98,7 +100,7 @@ export default function Home() {
       <div className="absolute top-6 right-6 z-10">
         <ScoringRules />
       </div>
-      <div className="w-full max-w-4xl mx-auto">
+      <div className="w-full max-w-5xl mx-auto">
         <header className="text-center mb-8">
           <div className="flex items-center justify-center gap-4">
              <svg

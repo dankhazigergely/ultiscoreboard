@@ -8,6 +8,7 @@ export interface Round {
   roundNumber: number;
   scores: { playerId: number; change: number }[];
   ultiPlayerId?: number | null;
+  gameId?: number | null;
   kontraPlayerIds?: number[] | null;
   sittingOutPlayerId?: number | null;
 }

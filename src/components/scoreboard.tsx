@@ -19,7 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Crown, PlusCircle, RotateCw, Swords, Trophy, Download, ArrowRight, ArrowLeft } from "lucide-react";
+import { PlusCircle, RotateCw, Swords, Trophy, Download, ArrowRight, ArrowLeft } from "lucide-react";
 import ScoreHistory from "./score-history";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -33,7 +33,8 @@ interface ScoreboardProps {
     scores: { playerId: number; change: number }[],
     ultiPlayerId?: number | null,
     kontraPlayerIds?: number[] | null,
-    sittingOutPlayerId?: number | null
+    sittingOutPlayerId?: number | null,
+    gameId?: number | null
   ) => void;
   onResetGame: () => void;
 }
@@ -110,43 +111,33 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
 
     const baseScore = parseScoreValue(game.value);
     const newScores = new Map<number, string>();
+    const winModifier = gameWon === 'yes' ? 1 : -1;
+
 
     if (sittingOutPlayerIdNum !== null) {
       newScores.set(sittingOutPlayerIdNum, "0");
     }
-
-    const currentActivePlayers = players.filter(p => p.id !== sittingOutPlayerIdNum);
-    const currentOtherActivePlayers = currentActivePlayers.filter(p => p.id !== mainPlayerIdNum);
-
+    
+    const currentOtherActivePlayers = activePlayers.filter(p => p.id !== mainPlayerIdNum);
+    
     if (isColorless) {
       let mainPlayerTotalChange = 0;
       currentOtherActivePlayers.forEach(p => {
         const isKontraPlayer = kontraPlayerIds.includes(p.id);
         const scoreMultiplier = isKontraPlayer ? 2 : 1;
-        const scoreForThisPlayer = baseScore * scoreMultiplier;
-
-        if (gameWon === 'yes') {
-          newScores.set(p.id, String(-scoreForThisPlayer));
-          mainPlayerTotalChange += scoreForThisPlayer;
-        } else {
-          newScores.set(p.id, String(scoreForThisPlayer));
-          mainPlayerTotalChange -= scoreForThisPlayer;
-        }
+        const scoreForThisPlayer = baseScore * scoreMultiplier * winModifier;
+        newScores.set(p.id, String(-scoreForThisPlayer));
+        mainPlayerTotalChange += scoreForThisPlayer;
       });
       newScores.set(mainPlayerIdNum, String(mainPlayerTotalChange));
     } else {
       const scoreMultiplier = kontraPlayerIds.length > 0 ? 2 : 1;
-      const finalScore = baseScore * scoreMultiplier;
+      const finalScore = baseScore * scoreMultiplier * winModifier;
       const numOtherPlayers = currentOtherActivePlayers.length;
-
-      if (gameWon === 'yes') {
-        newScores.set(mainPlayerIdNum, String(finalScore * numOtherPlayers));
-        currentOtherActivePlayers.forEach(p => newScores.set(p.id, String(-finalScore)));
-      } else {
-        newScores.set(mainPlayerIdNum, String(-finalScore * numOtherPlayers));
-        currentOtherActivePlayers.forEach(p => newScores.set(p.id, String(finalScore)));
-      }
+      newScores.set(mainPlayerIdNum, String(finalScore * numOtherPlayers));
+      currentOtherActivePlayers.forEach(p => newScores.set(p.id, String(-finalScore)));
     }
+
 
     setRoundScores(newScores);
 
@@ -176,7 +167,8 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
     }
     
     const sittingOutPlayerIdNum = players.length === 4 && sittingOutPlayerId ? parseInt(sittingOutPlayerId, 10) : null;
-    onAddRound(scores, ultiPlayerId, kontraPlayerIds, sittingOutPlayerIdNum);
+    const gameIdNum = selectedGameId ? parseInt(selectedGameId, 10) : null;
+    onAddRound(scores, ultiPlayerId, kontraPlayerIds, sittingOutPlayerIdNum, gameIdNum);
     setDialogOpen(false);
   };
 

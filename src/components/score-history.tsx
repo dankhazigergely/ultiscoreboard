@@ -1,4 +1,5 @@
 import type { Player, Round } from "@/lib/types";
+import { scoringData } from "@/lib/scoring";
 import {
   Accordion,
   AccordionContent,
@@ -15,7 +16,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Crown, Swords, UserX } from "lucide-react";
+import { Swords, UserX } from "lucide-react";
 
 interface ScoreHistoryProps {
   players: Player[];
@@ -32,8 +33,13 @@ export default function ScoreHistory({ players, rounds }: ScoreHistoryProps) {
   }
 
   const getPlayerName = (id: number | null | undefined) => {
-    if (id === null || id === undefined) return null;
-    return players.find(p => p.id === id)?.name || null;
+    if (id === null || id === undefined) return "-";
+    return players.find(p => p.id === id)?.name || "Ismeretlen";
+  }
+
+  const getGameName = (id: number | null | undefined) => {
+    if (id === null || id === undefined) return "-";
+    return scoringData.find(g => g.id === id)?.name || "Ismeretlen";
   }
 
   return (
@@ -50,10 +56,12 @@ export default function ScoreHistory({ players, rounds }: ScoreHistoryProps) {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-[100px]">Kör</TableHead>
+                        <TableHead className="w-[80px]">Kör</TableHead>
                         {players.map((player) => (
                           <TableHead key={player.id} className="text-center">{player.name}</TableHead>
                         ))}
+                        <TableHead>Felvevő</TableHead>
+                        <TableHead>Bemondás</TableHead>
                         <TableHead className="text-right">Megjegyzések</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -71,14 +79,10 @@ export default function ScoreHistory({ players, rounds }: ScoreHistoryProps) {
                               </TableCell>
                             );
                           })}
+                          <TableCell>{getPlayerName(round.ultiPlayerId)}</TableCell>
+                          <TableCell className="min-w-[120px]">{getGameName(round.gameId)}</TableCell>
                           <TableCell className="text-right">
                             <div className="flex flex-wrap gap-2 justify-end items-center">
-                              {round.ultiPlayerId !== null && round.ultiPlayerId !== undefined && (
-                                  <Badge variant="secondary" className="flex items-center gap-1 bg-amber-100 text-amber-800 border-amber-200">
-                                      <Crown className="h-3 w-3" />
-                                      <span className="hidden sm:inline">{getPlayerName(round.ultiPlayerId)}</span>
-                                  </Badge>
-                              )}
                               {round.kontraPlayerIds && round.kontraPlayerIds.length > 0 && (
                                   <Badge variant="secondary" className="flex items-center gap-1 bg-red-100 text-red-800 border-red-200">
                                       <Swords className="h-3 w-3" />
