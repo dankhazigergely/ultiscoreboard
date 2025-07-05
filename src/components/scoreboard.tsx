@@ -138,24 +138,24 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
               ))}
               <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="ulti-caller" className="text-right col-span-1 flex items-center justify-end gap-1"><Crown className="h-4 w-4" /> Ulti</Label>
-                  <Select onValueChange={(val) => setUltiPlayerId(val ? Number(val) : null)}>
+                  <Select onValueChange={(val) => setUltiPlayerId(val === "none" ? null : Number(val))}>
                     <SelectTrigger className="col-span-3">
                       <SelectValue placeholder="Válasszon játékost" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Nincs</SelectItem>
+                      <SelectItem value="none">Nincs</SelectItem>
                       {players.map(p => <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>)}
                     </SelectContent>
                   </Select>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="kontra-caller" className="text-right col-span-1 flex items-center justify-end gap-1"><Swords className="h-4 w-4" /> Kontra</Label>
-                   <Select onValueChange={(val) => setKontraPlayerId(val ? Number(val) : null)}>
+                   <Select onValueChange={(val) => setKontraPlayerId(val === "none" ? null : Number(val))}>
                     <SelectTrigger className="col-span-3">
                       <SelectValue placeholder="Válasszon játékost" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Nincs</SelectItem>
+                      <SelectItem value="none">Nincs</SelectItem>
                       {players.map(p => <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>)}
                     </SelectContent>
                   </Select>
