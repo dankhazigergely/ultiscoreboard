@@ -9,4 +9,5 @@ export interface Round {
   scores: { playerId: number; change: number }[];
   ultiPlayerId?: number | null;
   kontraPlayerIds?: number[] | null;
+  sittingOutPlayerId?: number | null;
 }

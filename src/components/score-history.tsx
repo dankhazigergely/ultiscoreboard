@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Crown, Swords } from "lucide-react";
+import { Crown, Swords, UserX } from "lucide-react";
 
 interface ScoreHistoryProps {
   players: Player[];
@@ -72,7 +72,7 @@ export default function ScoreHistory({ players, rounds }: ScoreHistoryProps) {
                             );
                           })}
                           <TableCell className="text-right">
-                            <div className="flex gap-2 justify-end items-center">
+                            <div className="flex flex-wrap gap-2 justify-end items-center">
                               {round.ultiPlayerId !== null && round.ultiPlayerId !== undefined && (
                                   <Badge variant="secondary" className="flex items-center gap-1 bg-amber-100 text-amber-800 border-amber-200">
                                       <Crown className="h-3 w-3" />
@@ -83,6 +83,12 @@ export default function ScoreHistory({ players, rounds }: ScoreHistoryProps) {
                                   <Badge variant="secondary" className="flex items-center gap-1 bg-red-100 text-red-800 border-red-200">
                                       <Swords className="h-3 w-3" />
                                       <span className="hidden sm:inline">{round.kontraPlayerIds.map(id => getPlayerName(id)).join(', ')}</span>
+                                  </Badge>
+                              )}
+                              {round.sittingOutPlayerId !== null && round.sittingOutPlayerId !== undefined && (
+                                  <Badge variant="secondary" className="flex items-center gap-1 bg-gray-100 text-gray-800 border-gray-200">
+                                      <UserX className="h-3 w-3" />
+                                      <span className="hidden sm:inline">Kimaradt: {getPlayerName(round.sittingOutPlayerId)}</span>
                                   </Badge>
                               )}
                             </div>

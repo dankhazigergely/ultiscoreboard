@@ -32,7 +32,8 @@ interface ScoreboardProps {
   onAddRound: (
     scores: { playerId: number; change: number }[],
     ultiPlayerId?: number | null,
-    kontraPlayerIds?: number[] | null
+    kontraPlayerIds?: number[] | null,
+    sittingOutPlayerId?: number | null
   ) => void;
   onResetGame: () => void;
 }
@@ -43,15 +44,26 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
 
   const [step, setStep] = useState(1);
   const [selectedGamePlayerId, setSelectedGamePlayerId] = useState<string | undefined>(undefined);
+  const [sittingOutPlayerId, setSittingOutPlayerId] = useState<string | undefined>(undefined);
   const [selectedGameId, setSelectedGameId] = useState<string | undefined>(undefined);
   const [gameWon, setGameWon] = useState<"yes" | "no">("yes");
   const [kontraPlayerIds, setKontraPlayerIds] = useState<number[]>([]);
   const [roundScores, setRoundScores] = useState<Map<number, string>>(new Map());
   const [ultiPlayerId, setUltiPlayerId] = useState<number | null>(null);
 
+  const mainPlayerId = selectedGamePlayerId ? parseInt(selectedGamePlayerId, 10) : null;
+  const activePlayers = players.length === 4 && sittingOutPlayerId
+    ? players.filter(p => String(p.id) !== sittingOutPlayerId)
+    : players;
+  const otherActivePlayers = mainPlayerId !== null
+    ? activePlayers.filter(p => p.id !== mainPlayerId)
+    : [];
+  const isColorless = selectedGameId ? colorlessGameIds.includes(parseInt(selectedGameId, 10)) : false;
+
   const resetDialogState = () => {
     setStep(1);
     setSelectedGamePlayerId(undefined);
+    setSittingOutPlayerId(undefined);
     setSelectedGameId(undefined);
     setGameWon("yes");
     setKontraPlayerIds([]);
@@ -81,20 +93,34 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
       });
       return;
     }
+    if (players.length === 4 && !sittingOutPlayerId) {
+      toast({
+        title: "Hiányzó adatok",
+        description: "Négy játékos esetén ki kell választani a kimaradót.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     const mainPlayerIdNum = parseInt(selectedGamePlayerId, 10);
+    const sittingOutPlayerIdNum = players.length === 4 && sittingOutPlayerId ? parseInt(sittingOutPlayerId, 10) : null;
     const game = scoringData.find(g => g.id === parseInt(selectedGameId, 10));
 
     if (!game) return;
 
     const baseScore = parseScoreValue(game.value);
-    const isColorlessGame = colorlessGameIds.includes(game.id);
     const newScores = new Map<number, string>();
-    const otherPlayers = players.filter(p => p.id !== mainPlayerIdNum);
 
-    if (isColorlessGame) {
+    if (sittingOutPlayerIdNum !== null) {
+      newScores.set(sittingOutPlayerIdNum, "0");
+    }
+
+    const currentActivePlayers = players.filter(p => p.id !== sittingOutPlayerIdNum);
+    const currentOtherActivePlayers = currentActivePlayers.filter(p => p.id !== mainPlayerIdNum);
+
+    if (isColorless) {
       let mainPlayerTotalChange = 0;
-      otherPlayers.forEach(p => {
+      currentOtherActivePlayers.forEach(p => {
         const isKontraPlayer = kontraPlayerIds.includes(p.id);
         const scoreMultiplier = isKontraPlayer ? 2 : 1;
         const scoreForThisPlayer = baseScore * scoreMultiplier;
@@ -109,17 +135,16 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
       });
       newScores.set(mainPlayerIdNum, String(mainPlayerTotalChange));
     } else {
-      // Színes játék
       const scoreMultiplier = kontraPlayerIds.length > 0 ? 2 : 1;
       const finalScore = baseScore * scoreMultiplier;
-      const numOtherPlayers = otherPlayers.length;
+      const numOtherPlayers = currentOtherActivePlayers.length;
 
       if (gameWon === 'yes') {
         newScores.set(mainPlayerIdNum, String(finalScore * numOtherPlayers));
-        otherPlayers.forEach(p => newScores.set(p.id, String(-finalScore)));
+        currentOtherActivePlayers.forEach(p => newScores.set(p.id, String(-finalScore)));
       } else {
         newScores.set(mainPlayerIdNum, String(-finalScore * numOtherPlayers));
-        otherPlayers.forEach(p => newScores.set(p.id, String(finalScore)));
+        currentOtherActivePlayers.forEach(p => newScores.set(p.id, String(finalScore)));
       }
     }
 
@@ -149,8 +174,9 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
       });
       return;
     }
-
-    onAddRound(scores, ultiPlayerId, kontraPlayerIds);
+    
+    const sittingOutPlayerIdNum = players.length === 4 && sittingOutPlayerId ? parseInt(sittingOutPlayerId, 10) : null;
+    onAddRound(scores, ultiPlayerId, kontraPlayerIds, sittingOutPlayerIdNum);
     setDialogOpen(false);
   };
 
@@ -166,14 +192,15 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
     const getPlayerName = (id: number | null | undefined): string => players.find(p => p.id === id)?.name || '';
     const getKontraPlayerNames = (ids: number[] | null | undefined): string => (ids ? ids.map(id => getPlayerName(id)).join(', ') : '');
 
-    const headers = ['Kör', ...players.map(p => escapeCsvCell(p.name)), 'Ultit mondta', 'Kontrát mondta'].join(',');
+    const headers = ['Kör', ...players.map(p => escapeCsvCell(p.name)), 'Ultit mondta', 'Kontrát mondta', 'Kimaradt'].join(',');
     const rows = rounds.map(round => [
       round.roundNumber,
       ...players.map(p => round.scores.find(s => s.playerId === p.id)?.change || 0),
       escapeCsvCell(getPlayerName(round.ultiPlayerId)),
-      escapeCsvCell(getKontraPlayerNames(round.kontraPlayerIds))
+      escapeCsvCell(getKontraPlayerNames(round.kontraPlayerIds)),
+      escapeCsvCell(getPlayerName(round.sittingOutPlayerId))
     ].join(','));
-    const totalsRow = ['Összesen', ...players.map(p => p.score), '', ''].join(',');
+    const totalsRow = ['Összesen', ...players.map(p => p.score), '', '', ''].join(',');
     let csvContent = headers + '\n' + rows.join('\n') + '\n' + totalsRow;
 
     const blob = new Blob([`\uFEFF${csvContent}`], { type: 'text/csv;charset=utf-8;' });
@@ -202,9 +229,6 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
   };
 
   const leaderId = getLeaderId();
-  const mainPlayerId = selectedGamePlayerId ? parseInt(selectedGamePlayerId, 10) : null;
-  const otherPlayers = mainPlayerId !== null ? players.filter(p => p.id !== mainPlayerId) : [];
-  const isColorless = selectedGameId ? colorlessGameIds.includes(parseInt(selectedGameId, 10)) : false;
 
   return (
     <div className="space-y-8 animate-in fade-in-50 duration-500">
@@ -245,7 +269,7 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
                 <div className="grid gap-4 py-4">
                   <div className="space-y-2">
                     <Label htmlFor="game-player">Felvevő játékos</Label>
-                    <Select onValueChange={setSelectedGamePlayerId} value={selectedGamePlayerId}>
+                    <Select onValueChange={(value) => { setSelectedGamePlayerId(value); setSittingOutPlayerId(undefined); }} value={selectedGamePlayerId}>
                       <SelectTrigger id="game-player">
                         <SelectValue placeholder="Válasszon játékost" />
                       </SelectTrigger>
@@ -254,6 +278,22 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
                       </SelectContent>
                     </Select>
                   </div>
+                   {players.length === 4 && selectedGamePlayerId && (
+                    <div className="space-y-2">
+                      <Label htmlFor="sitting-out-player">Kimaradó játékos</Label>
+                      <Select onValueChange={setSittingOutPlayerId} value={sittingOutPlayerId}>
+                        <SelectTrigger id="sitting-out-player">
+                          <SelectValue placeholder="Válassza ki a kimaradót" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {players
+                            .filter(p => String(p.id) !== selectedGamePlayerId)
+                            .map(p => <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>)
+                          }
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                   <div className="space-y-2">
                     <Label htmlFor="game-type">Bemondás</Label>
                     <Select onValueChange={(value) => { setSelectedGameId(value); setKontraPlayerIds([]); }} value={selectedGameId}>
@@ -285,7 +325,7 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
                       {isColorless ? (
                         <div className="space-y-2 rounded-md border p-4">
                             <Label className="text-sm text-muted-foreground">Ki mondott kontrát?</Label>
-                            {otherPlayers.map(p => (
+                            {otherActivePlayers.map(p => (
                                 <div key={p.id} className="flex items-center space-x-2 pt-2">
                                     <Checkbox
                                         id={`kontra-check-${p.id}`}
@@ -308,7 +348,7 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
                                 id="kontra-switch"
                                 checked={kontraPlayerIds.length > 0}
                                 onCheckedChange={(checked) => {
-                                    setKontraPlayerIds(checked ? otherPlayers.map(p => p.id) : []);
+                                    setKontraPlayerIds(checked ? otherActivePlayers.map(p => p.id) : []);
                                 }}
                             />
                         </div>
