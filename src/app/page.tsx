@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import type { Player, Round } from "@/lib/types";
 import GameSetup from "@/components/game-setup";
 import Scoreboard from "@/components/scoreboard";
+import ScoringRules from "@/components/scoring-rules";
 import { Crown } from "lucide-react";
 
 const GAME_STATE_KEY = 'ultiScoreboardGameState';
@@ -92,7 +93,10 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 transition-colors duration-500">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 transition-colors duration-500 relative">
+      <div className="absolute top-6 right-6 z-10">
+        <ScoringRules />
+      </div>
       <div className="w-full max-w-4xl mx-auto">
         <header className="text-center mb-8">
           <div className="flex items-center justify-center gap-4">
