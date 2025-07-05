@@ -5,7 +5,6 @@ import type { Player, Round } from "@/lib/types";
 import GameSetup from "@/components/game-setup";
 import Scoreboard from "@/components/scoreboard";
 import ScoringRules from "@/components/scoring-rules";
-import { Crown } from "lucide-react";
 
 const GAME_STATE_KEY = 'ultiMokaGameState';
 
@@ -100,7 +99,25 @@ export default function Home() {
       <div className="w-full max-w-4xl mx-auto">
         <header className="text-center mb-8">
           <div className="flex items-center justify-center gap-4">
-             <Crown className="w-12 h-12 text-primary" />
+             <svg
+                className="w-20 h-16 text-primary"
+                viewBox="0 0 120 80"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <g transform="translate(15 10) rotate(-15 20 30)">
+                  <rect x="0" y="0" width="40" height="60" rx="4" className="fill-card stroke-current" strokeWidth="2" />
+                  <text x="5" y="18" fontFamily="serif" fontSize="16" fontWeight="bold" className="fill-current">F</text>
+                </g>
+                <g transform="translate(65 10) rotate(15 20 30)">
+                  <rect x="0" y="0" width="40" height="60" rx="4" className="fill-card stroke-current" strokeWidth="2" />
+                  <text x="5" y="18" fontFamily="serif" fontSize="16" fontWeight="bold" className="fill-current">A</text>
+                </g>
+                <g transform="translate(40 10)">
+                  <rect x="0" y="0" width="40" height="60" rx="4" className="fill-card stroke-current" strokeWidth="2" />
+                  <text x="5" y="18" fontFamily="serif" fontSize="16" fontWeight="bold" className="fill-current">K</text>
+                </g>
+              </svg>
              <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-primary tracking-tight">
                UltiMóka
              </h1>
