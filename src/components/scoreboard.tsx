@@ -87,7 +87,7 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
 
     if (!game) return;
 
-    let baseScore = parseScoreValue(game.value);
+    const baseScore = parseScoreValue(game.value);
     const isColorlessGame = colorlessGameIds.includes(game.id);
     const newScores = new Map<number, string>();
     const otherPlayers = players.filter(p => p.id !== mainPlayerIdNum);
@@ -96,7 +96,8 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
       let mainPlayerTotalChange = 0;
       otherPlayers.forEach(p => {
         const isKontraPlayer = kontraPlayerIds.includes(p.id);
-        const scoreForThisPlayer = isKontraPlayer ? baseScore * 2 : baseScore;
+        const scoreMultiplier = isKontraPlayer ? 2 : 1;
+        const scoreForThisPlayer = baseScore * scoreMultiplier;
 
         if (gameWon === 'yes') {
           newScores.set(p.id, String(-scoreForThisPlayer));
@@ -108,16 +109,17 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
       });
       newScores.set(mainPlayerIdNum, String(mainPlayerTotalChange));
     } else {
-      if (kontraPlayerIds.length > 0) {
-        baseScore *= 2;
-      }
+      // Színes játék
+      const scoreMultiplier = kontraPlayerIds.length > 0 ? 2 : 1;
+      const finalScore = baseScore * scoreMultiplier;
       const numOtherPlayers = otherPlayers.length;
+
       if (gameWon === 'yes') {
-        newScores.set(mainPlayerIdNum, String(baseScore * numOtherPlayers));
-        otherPlayers.forEach(p => newScores.set(p.id, String(-baseScore)));
+        newScores.set(mainPlayerIdNum, String(finalScore * numOtherPlayers));
+        otherPlayers.forEach(p => newScores.set(p.id, String(-finalScore)));
       } else {
-        newScores.set(mainPlayerIdNum, String(-baseScore * numOtherPlayers));
-        otherPlayers.forEach(p => newScores.set(p.id, String(baseScore)));
+        newScores.set(mainPlayerIdNum, String(-finalScore * numOtherPlayers));
+        otherPlayers.forEach(p => newScores.set(p.id, String(finalScore)));
       }
     }
 
@@ -242,7 +244,7 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="space-y-2">
-                    <Label htmlFor="game-player">Játékos</Label>
+                    <Label htmlFor="game-player">Felvevő játékos</Label>
                     <Select onValueChange={setSelectedGamePlayerId} value={selectedGamePlayerId}>
                       <SelectTrigger id="game-player">
                         <SelectValue placeholder="Válasszon játékost" />
@@ -253,7 +255,7 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="game-type">Játék típusa</Label>
+                    <Label htmlFor="game-type">Bemondás</Label>
                     <Select onValueChange={(value) => { setSelectedGameId(value); setKontraPlayerIds([]); }} value={selectedGameId}>
                       <SelectTrigger id="game-type">
                         <SelectValue placeholder="Válasszon játékot" />
