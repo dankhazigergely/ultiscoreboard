@@ -19,17 +19,22 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 const scoringData = [
-  { game: "Ulti", points: "4", description: "Az utolsó adut (ulti) elviszi a játékos." },
-  { game: "Betli", points: "5", description: "A játékos egyetlen ütést sem visz el." },
-  { game: "40-100", points: "8", description: "A játékos bemondja és teljesíti a 40-et és a 100-at is." },
-  { game: "Durchmarsch", points: "6", description: "A játékos az összes ütést elviszi." },
-  { game: "Csendes 100", points: "4", description: "Bejelentés nélküli 100 pont elérése." },
-  { game: "Csendes 4 ász", points: "8", description: "Bejelentés nélküli 4 ász ütés." },
-  { game: "Csendes Ulti bukás", points: "8", description: "Az ultit nem sikerül elvinni (csendesen)." },
-  { game: "Kontra", points: "x2", description: "Duplázza a játék pontértékét." },
-  { game: "Rekontra", points: "x4", description: "Négyszerezi a játék pontértékét." },
-  { game: "Szubkontra", points: "x8", description: "Nyolcszorozza a játék pontértékét." },
-  { game: "Hirschkontra", points: "x16", description: "Tizenhatszorozza a játék pontértékét." },
+    { id: 1, name: "parti (színjáték)", value: "1" },
+    { id: 2, name: "piros parti (piros színjáték)", value: "2" },
+    { id: 3, name: "40 -100", value: "4" },
+    { id: 4, name: "négy ász + parti", value: "4+1" },
+    { id: 5, name: "ultimó (ulti) + parti", value: "4+1" },
+    { id: 6, name: "betli", value: "5" },
+    { id: 7, name: "durchmars", value: "6" },
+    { id: 8, name: "piros 40-100", value: "8" },
+    { id: 9, name: "20 -100", value: "8" },
+    { id: 10, name: "piros négy ász + piros parti", value: "8+2" },
+    { id: 11, name: "piros ultimó ( piros ulti)+ piros parti", value: "8+2" },
+    { id: 12, name: "piros betli", value: "10" },
+    { id: 13, name: "piros durchmars vagy redurchmars", value: "12" },
+    { id: 14, name: "piros 20-100", value: "16" },
+    { id: 15, name: "terített betli", value: "20" },
+    { id: 16, name: "terített durchmars", value: "24" },
 ];
 
 export default function ScoringRules() {
@@ -53,17 +58,17 @@ export default function ScoringRules() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Játék</TableHead>
-                  <TableHead className="text-center">Pont</TableHead>
-                  <TableHead>Leírás</TableHead>
+                  <TableHead className="w-[80px]">Sorszám</TableHead>
+                  <TableHead>A játék neve</TableHead>
+                  <TableHead className="text-right">A játék értéke</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {scoringData.map((item) => (
-                  <TableRow key={item.game}>
-                    <TableCell className="font-medium">{item.game}</TableCell>
-                    <TableCell className="text-center">{item.points}</TableCell>
-                    <TableCell>{item.description}</TableCell>
+                  <TableRow key={item.id}>
+                    <TableCell className="font-medium">{item.id}</TableCell>
+                    <TableCell>{item.name}</TableCell>
+                    <TableCell className="text-right">{item.value}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
