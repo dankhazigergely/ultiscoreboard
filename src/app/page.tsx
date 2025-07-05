@@ -86,6 +86,21 @@ export default function Home() {
       console.error("Failed to clear game state from localStorage", error);
     }
   };
+
+  const handleDeleteLastRound = () => {
+    if (rounds.length === 0) {
+      return;
+    }
+
+    const lastRound = rounds[rounds.length - 1];
+    const restoredPlayers = players.map(player => {
+      const scoreChange = lastRound.scores.find(s => s.playerId === player.id)?.change || 0;
+      return { ...player, score: player.score - scoreChange };
+    });
+
+    setPlayers(restoredPlayers);
+    setRounds(rounds.slice(0, -1));
+  };
   
   if (isLoading) {
     return (
@@ -140,6 +155,7 @@ export default function Home() {
               rounds={rounds}
               onAddRound={handleAddRound}
               onResetGame={handleResetGame}
+              onDeleteLastRound={handleDeleteLastRound}
             />
           )}
         </main>

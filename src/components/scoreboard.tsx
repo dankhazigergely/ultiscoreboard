@@ -19,7 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PlusCircle, RotateCw, Swords, Trophy, Download, ArrowRight, ArrowLeft } from "lucide-react";
+import { PlusCircle, RotateCw, Swords, Trophy, Download, ArrowRight, ArrowLeft, Trash2 } from "lucide-react";
 import ScoreHistory from "./score-history";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -37,9 +37,10 @@ interface ScoreboardProps {
     gameId?: number | null
   ) => void;
   onResetGame: () => void;
+  onDeleteLastRound: () => void;
 }
 
-export default function Scoreboard({ players, rounds, onAddRound, onResetGame }: ScoreboardProps) {
+export default function Scoreboard({ players, rounds, onAddRound, onResetGame, onDeleteLastRound }: ScoreboardProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const { toast } = useToast();
 
@@ -242,7 +243,7 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-4 flex-wrap">
         <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
           <DialogTrigger asChild>
             <Button className="w-full sm:w-auto bg-accent hover:bg-accent/90">
@@ -261,7 +262,7 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
                 <div className="grid gap-4 py-4">
                   <div className="space-y-2">
                     <Label htmlFor="game-player">Felvevő játékos</Label>
-                    <Select onValueChange={(value) => { setSelectedGamePlayerId(value); setSittingOutPlayerId(undefined); }} value={selectedGamePlayerId}>
+                    <Select onValueChange={(value) => { setSelectedGamePlayerId(value); if(players.length === 4) setSittingOutPlayerId(undefined); }} value={selectedGamePlayerId}>
                       <SelectTrigger id="game-player">
                         <SelectValue placeholder="Válasszon játékost" />
                       </SelectTrigger>
@@ -399,6 +400,26 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
         <Button variant="outline" onClick={handleExportCSV} className="w-full sm:w-auto">
             <Download className="mr-2 h-4 w-4" /> Exportálás (CSV)
         </Button>
+
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="outline" disabled={rounds.length === 0} className="w-full sm:w-auto">
+              <Trash2 className="mr-2 h-4 w-4" /> Utolsó kör törlése
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Biztosan törli az utolsó kört?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Ez a művelet nem vonható vissza. Ezzel véglegesen törli az utolsó rögzített kört és visszaállítja a pontszámokat az előző állapotra.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Mégse</AlertDialogCancel>
+              <AlertDialogAction onClick={onDeleteLastRound}>Törlés</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         <AlertDialog>
           <AlertDialogTrigger asChild>
