@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -39,24 +38,40 @@ interface ScoreboardProps {
 }
 
 export default function Scoreboard({ players, rounds, onAddRound, onResetGame }: ScoreboardProps) {
-  const [roundScores, setRoundScores] = useState<Map<number, string>>(new Map());
-  const [ultiPlayerId, setUltiPlayerId] = useState<number | null>(null);
-  const [kontraPlayerIds, setKontraPlayerIds] = useState<number[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const { toast } = useToast();
 
   const [step, setStep] = useState(1);
-  const [selectedGamePlayerId, setSelectedGamePlayerId] = useState<string | null>(null);
-  const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
+  const [selectedGamePlayerId, setSelectedGamePlayerId] = useState<string | undefined>(undefined);
+  const [selectedGameId, setSelectedGameId] = useState<string | undefined>(undefined);
   const [gameWon, setGameWon] = useState<"yes" | "no">("yes");
+  const [kontraPlayerIds, setKontraPlayerIds] = useState<number[]>([]);
+  const [roundScores, setRoundScores] = useState<Map<number, string>>(new Map());
+  const [ultiPlayerId, setUltiPlayerId] = useState<number | null>(null);
 
+  const resetDialogState = () => {
+    setStep(1);
+    setSelectedGamePlayerId(undefined);
+    setSelectedGameId(undefined);
+    setGameWon("yes");
+    setKontraPlayerIds([]);
+    setRoundScores(new Map());
+    setUltiPlayerId(null);
+  };
+
+  const handleDialogOpenChange = (isOpen: boolean) => {
+    setDialogOpen(isOpen);
+    if (isOpen) {
+      resetDialogState();
+    }
+  };
 
   const handleScoreChange = (playerId: number, value: string) => {
     const newScores = new Map(roundScores);
     newScores.set(playerId, value);
     setRoundScores(newScores);
   };
-  
+
   const handleNextStep = () => {
     if (!selectedGamePlayerId || !selectedGameId) {
       toast({
@@ -66,14 +81,15 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
       });
       return;
     }
-    
-    const mainPlayerId = parseInt(selectedGamePlayerId, 10);
+
+    const mainPlayerIdNum = parseInt(selectedGamePlayerId, 10);
     const game = scoringData.find(g => g.id === parseInt(selectedGameId, 10));
+
     if (!game) return;
-    
+
     let baseScore = parseScoreValue(game.value);
-    
     const isColorlessGame = colorlessGameIds.includes(game.id);
+
     if (kontraPlayerIds.length > 0) {
       if (isColorlessGame) {
         const multiplier = 2 ** kontraPlayerIds.length;
@@ -84,30 +100,25 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
     }
 
     const newScores = new Map<number, string>();
-    const otherPlayers = players.filter(p => p.id !== mainPlayerId);
+    const otherPlayers = players.filter(p => p.id !== mainPlayerIdNum);
     const numOtherPlayers = otherPlayers.length;
 
     if (gameWon === 'yes') {
-      newScores.set(String(mainPlayerId), String(baseScore * numOtherPlayers));
-      otherPlayers.forEach(p => newScores.set(String(p.id), String(-baseScore)));
-    } else { // gameLost
-      newScores.set(String(mainPlayerId), String(-baseScore * numOtherPlayers));
-      otherPlayers.forEach(p => newScores.set(String(p.id), String(baseScore)));
+      newScores.set(mainPlayerIdNum, String(baseScore * numOtherPlayers));
+      otherPlayers.forEach(p => newScores.set(p.id, String(-baseScore)));
+    } else {
+      newScores.set(mainPlayerIdNum, String(-baseScore * numOtherPlayers));
+      otherPlayers.forEach(p => newScores.set(p.id, String(baseScore)));
     }
 
-    const finalScores = new Map<number, string>();
-    newScores.forEach((value, key) => {
-      finalScores.set(parseInt(key, 10), value);
-    });
+    setRoundScores(newScores);
 
-    setRoundScores(finalScores);
-    
     if (game.name.toLowerCase().includes("ulti") || game.name.toLowerCase().includes("ultimó")) {
-      setUltiPlayerId(mainPlayerId);
+      setUltiPlayerId(mainPlayerIdNum);
     } else {
       setUltiPlayerId(null);
     }
-    
+
     setStep(2);
   };
 
@@ -116,10 +127,10 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
       playerId: p.id,
       change: parseInt(roundScores.get(p.id) || "0", 10) || 0,
     }));
-    
+
     const sum = scores.reduce((acc, s) => acc + s.change, 0);
     if (sum !== 0) {
-       toast({
+      toast({
         title: "Érvénytelen pontok",
         description: "A pontok összegének nullának kell lennie.",
         variant: "destructive",
@@ -131,94 +142,44 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
     setDialogOpen(false);
   };
 
-  const handleDialogOpenChange = (isOpen: boolean) => {
-    setDialogOpen(isOpen);
-    if (isOpen) {
-        setStep(1);
-        setRoundScores(new Map());
-        setUltiPlayerId(null);
-        setKontraPlayerIds([]);
-        setSelectedGamePlayerId(null);
-        setSelectedGameId(null);
-        setGameWon("yes");
-    }
-  };
-
   const handleExportCSV = () => {
     if (rounds.length === 0) {
-      toast({
-        title: "Nincs adat",
-        description: "Nincsenek körök az exportáláshoz.",
-        variant: "destructive",
-      });
+      toast({ title: "Nincs adat", description: "Nincsenek körök az exportáláshoz.", variant: "destructive" });
       return;
     }
-
     const escapeCsvCell = (cell: string | number | null | undefined) => {
       const strCell = String(cell === null || cell === undefined ? "" : cell);
-      if (strCell.includes(',')) {
-        return `"${strCell.replace(/"/g, '""')}"`;
-      }
-      return strCell;
+      return strCell.includes(',') ? `"${strCell.replace(/"/g, '""')}"` : strCell;
     };
+    const getPlayerName = (id: number | null | undefined): string => players.find(p => p.id === id)?.name || '';
+    const getKontraPlayerNames = (ids: number[] | null | undefined): string => (ids ? ids.map(id => getPlayerName(id)).join(', ') : '');
 
-    const getPlayerName = (id: number | null | undefined): string => {
-      if (id === null || id === undefined) return '';
-      return players.find(p => p.id === id)?.name || '';
-    };
-
-    const getKontraPlayerNames = (ids: number[] | null | undefined): string => {
-        if (!ids || ids.length === 0) return '';
-        return ids.map(id => getPlayerName(id)).join(', ');
-    };
-
-    const headers = [
-      'Kör',
-      ...players.map(p => escapeCsvCell(p.name)),
-      'Ultit mondta',
-      'Kontrát mondta'
-    ].join(',');
-
-    const rows = rounds.map(round => {
-      const rowData = [
-        round.roundNumber,
-        ...players.map(p => {
-          const score = round.scores.find(s => s.playerId === p.id);
-          return score ? score.change : 0;
-        }),
-        escapeCsvCell(getPlayerName(round.ultiPlayerId)),
-        escapeCsvCell(getKontraPlayerNames(round.kontraPlayerIds))
-      ];
-      return rowData.join(',');
-    });
-
-    const totalsRow = [
-      'Összesen',
-      ...players.map(p => p.score),
-      '',
-      ''
-    ].join(',');
-
+    const headers = ['Kör', ...players.map(p => escapeCsvCell(p.name)), 'Ultit mondta', 'Kontrát mondta'].join(',');
+    const rows = rounds.map(round => [
+      round.roundNumber,
+      ...players.map(p => round.scores.find(s => s.playerId === p.id)?.change || 0),
+      escapeCsvCell(getPlayerName(round.ultiPlayerId)),
+      escapeCsvCell(getKontraPlayerNames(round.kontraPlayerIds))
+    ].join(','));
+    const totalsRow = ['Összesen', ...players.map(p => p.score), '', ''].join(',');
     let csvContent = headers + '\n' + rows.join('\n') + '\n' + totalsRow;
 
     const blob = new Blob([`\uFEFF${csvContent}`], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
     link.setAttribute("href", url);
-    const date = new Date().toISOString().slice(0, 10);
-    link.setAttribute("download", `ultimoka_eredmenyek_${date}.csv`);
-    link.style.visibility = 'hidden';
+    link.setAttribute("download", `ultimoka_eredmenyek_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
-  
+
   const getLeaderId = () => {
     if (players.length === 0) return null;
     let maxScore = -Infinity;
     let leaders: number[] = [];
     players.forEach(player => {
-      if(player.score > maxScore){
+      if (player.score > maxScore) {
         maxScore = player.score;
         leaders = [player.id];
       } else if (player.score === maxScore) {
@@ -229,7 +190,6 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
   };
 
   const leaderId = getLeaderId();
-
   const mainPlayerId = selectedGamePlayerId ? parseInt(selectedGamePlayerId, 10) : null;
   const otherPlayers = mainPlayerId !== null ? players.filter(p => p.id !== mainPlayerId) : [];
   const isColorless = selectedGameId ? colorlessGameIds.includes(parseInt(selectedGameId, 10)) : false;
@@ -273,7 +233,7 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
                 <div className="grid gap-4 py-4">
                   <div className="space-y-2">
                     <Label htmlFor="game-player">Játékos</Label>
-                    <Select onValueChange={setSelectedGamePlayerId} value={selectedGamePlayerId || undefined}>
+                    <Select onValueChange={setSelectedGamePlayerId} value={selectedGamePlayerId}>
                       <SelectTrigger id="game-player">
                         <SelectValue placeholder="Válasszon játékost" />
                       </SelectTrigger>
@@ -284,7 +244,7 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="game-type">Játék típusa</Label>
-                    <Select onValueChange={(value) => { setSelectedGameId(value); setKontraPlayerIds([]); }} value={selectedGameId || undefined}>
+                    <Select onValueChange={(value) => { setSelectedGameId(value); setKontraPlayerIds([]); }} value={selectedGameId}>
                       <SelectTrigger id="game-type">
                         <SelectValue placeholder="Válasszon játékot" />
                       </SelectTrigger>
@@ -293,7 +253,7 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
                       </SelectContent>
                     </Select>
                   </div>
-                   <div className="space-y-2">
+                  <div className="space-y-2">
                     <Label>Eredmény</Label>
                     <RadioGroup defaultValue="yes" onValueChange={(val: "yes" | "no") => setGameWon(val)} className="flex gap-4">
                         <div className="flex items-center space-x-2">
@@ -319,8 +279,8 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
                                         id={`kontra-check-${p.id}`}
                                         checked={kontraPlayerIds.includes(p.id)}
                                         onCheckedChange={(checked) => {
-                                            const newIds = checked 
-                                                ? [...kontraPlayerIds, p.id] 
+                                            const newIds = checked
+                                                ? [...kontraPlayerIds, p.id]
                                                 : kontraPlayerIds.filter(id => id !== p.id);
                                             setKontraPlayerIds(newIds);
                                         }}
