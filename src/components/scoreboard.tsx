@@ -17,7 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Crown, PlusCircle, RotateCw, Swords, Trophy } from "lucide-react";
+import { Crown, PlusCircle, RotateCw, Swords, Trophy, Download } from "lucide-react";
 import ScoreHistory from "./score-history";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -45,11 +45,9 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
     const newScores = new Map(roundScores);
 
     if (isInitialInput) {
-      // In initial mode, only allow one field to have a value.
-      // This ensures the blur event logic works on the first-filled input.
       const newInitialScores = new Map<number, string>();
-      players.forEach(p => newInitialScores.set(p.id, "")); // Reset all
-      newInitialScores.set(playerId, value); // Set the current one
+      players.forEach(p => newInitialScores.set(p.id, ""));
+      newInitialScores.set(playerId, value);
       setRoundScores(newInitialScores);
     } else {
       newScores.set(playerId, value);
@@ -118,6 +116,70 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
         setIsInitialInput(true);
     }
   }
+
+  const handleExportCSV = () => {
+    if (rounds.length === 0) {
+      toast({
+        title: "Nincs adat",
+        description: "Nincsenek körök az exportáláshoz.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const escapeCsvCell = (cell: string | number | null | undefined) => {
+      const strCell = String(cell === null || cell === undefined ? "" : cell);
+      if (strCell.includes(',')) {
+        return `"${strCell.replace(/"/g, '""')}"`;
+      }
+      return strCell;
+    };
+
+    const getPlayerName = (id: number | null | undefined) => {
+      if (id === null || id === undefined) return '';
+      return players.find(p => p.id === id)?.name || '';
+    };
+
+    const headers = [
+      'Kör',
+      ...players.map(p => escapeCsvCell(p.name)),
+      'Ultit mondta',
+      'Kontrát mondta'
+    ].join(',');
+
+    const rows = rounds.map(round => {
+      const rowData = [
+        round.roundNumber,
+        ...players.map(p => {
+          const score = round.scores.find(s => s.playerId === p.id);
+          return score ? score.change : 0;
+        }),
+        escapeCsvCell(getPlayerName(round.ultiPlayerId)),
+        escapeCsvCell(getPlayerName(round.kontraPlayerId))
+      ];
+      return rowData.join(',');
+    });
+
+    const totalsRow = [
+      'Összesen',
+      ...players.map(p => p.score),
+      '',
+      ''
+    ].join(',');
+
+    let csvContent = headers + '\n' + rows.join('\n') + '\n' + totalsRow;
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    const date = new Date().toISOString().slice(0, 10);
+    link.setAttribute("download", `ultimoka_eredmenyek_${date}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
   
   const getLeaderId = () => {
     if (players.length === 0) return null;
@@ -222,6 +284,10 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
           </DialogContent>
         </Dialog>
         
+        <Button variant="outline" onClick={handleExportCSV} className="w-full sm:w-auto">
+            <Download className="mr-2 h-4 w-4" /> Exportálás (CSV)
+        </Button>
+
         <AlertDialog>
           <AlertDialogTrigger asChild>
              <Button variant="destructive" className="w-full sm:w-auto">
