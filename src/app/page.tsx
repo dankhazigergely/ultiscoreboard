@@ -1,15 +1,48 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Player, Round } from "@/lib/types";
 import GameSetup from "@/components/game-setup";
 import Scoreboard from "@/components/scoreboard";
 import { Crown } from "lucide-react";
 
+const GAME_STATE_KEY = 'ultiScoreboardGameState';
+
 export default function Home() {
   const [gameStarted, setGameStarted] = useState(false);
   const [players, setPlayers] = useState<Player[]>([]);
   const [rounds, setRounds] = useState<Round[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    try {
+      const savedState = localStorage.getItem(GAME_STATE_KEY);
+      if (savedState) {
+        const { gameStarted, players, rounds } = JSON.parse(savedState);
+        if (gameStarted && Array.isArray(players) && Array.isArray(rounds)) {
+          setGameStarted(gameStarted);
+          setPlayers(players);
+          setRounds(rounds);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to load game state from localStorage:", error);
+      localStorage.removeItem(GAME_STATE_KEY);
+    }
+    setIsLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (isLoading) {
+      return;
+    }
+    try {
+      const gameState = { gameStarted, players, rounds };
+      localStorage.setItem(GAME_STATE_KEY, JSON.stringify(gameState));
+    } catch (error) {
+      console.error("Failed to save game state to localStorage:", error);
+    }
+  }, [gameStarted, players, rounds, isLoading]);
 
   const handleStartGame = (playerNames: string[]) => {
     setPlayers(
@@ -43,7 +76,20 @@ export default function Home() {
     setGameStarted(false);
     setPlayers([]);
     setRounds([]);
+    try {
+      localStorage.removeItem(GAME_STATE_KEY);
+    } catch (error) {
+      console.error("Failed to clear game state from localStorage", error);
+    }
   };
+  
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-4">
+        <p>Játék betöltése...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 transition-colors duration-500">
