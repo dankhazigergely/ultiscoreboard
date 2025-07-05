@@ -34,21 +34,58 @@ interface ScoreboardProps {
 }
 
 export default function Scoreboard({ players, rounds, onAddRound, onResetGame }: ScoreboardProps) {
-  const [roundScores, setRoundScores] = useState<Map<number, number>>(new Map());
+  const [roundScores, setRoundScores] = useState<Map<number, string>>(new Map());
   const [ultiPlayerId, setUltiPlayerId] = useState<number | null>(null);
   const [kontraPlayerId, setKontraPlayerId] = useState<number | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [isInitialInput, setIsInitialInput] = useState(true);
   const { toast } = useToast();
 
   const handleScoreChange = (playerId: number, value: string) => {
-    const score = parseInt(value, 10) || 0;
-    setRoundScores(new Map(roundScores.set(playerId, score)));
+    const newScores = new Map(roundScores);
+
+    if (isInitialInput) {
+      const score = parseInt(value, 10);
+      if (!isNaN(score) && score > 0) {
+        toast({
+          title: "Helytelen bevitel",
+          description: "Az első pontszámnak negatívnak kell lennie.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      newScores.set(playerId, value);
+
+      if (!isNaN(score) && score < 0) {
+        const scoreToDistribute = -score;
+        const otherPlayers = players.filter(p => p.id !== playerId);
+        const numOtherPlayers = otherPlayers.length;
+
+        if (numOtherPlayers > 0) {
+            const baseScore = Math.floor(scoreToDistribute / numOtherPlayers);
+            let remainder = scoreToDistribute % numOtherPlayers;
+
+            otherPlayers.forEach((p) => {
+              const distributedScore = baseScore + (remainder > 0 ? 1 : 0);
+              newScores.set(p.id, String(distributedScore));
+              if (remainder > 0) {
+                remainder--;
+              }
+            });
+        }
+        setIsInitialInput(false);
+      }
+    } else {
+      newScores.set(playerId, value);
+    }
+    setRoundScores(newScores);
   };
 
   const handleAddRoundSubmit = () => {
     const scores = players.map((p) => ({
       playerId: p.id,
-      change: roundScores.get(p.id) || 0,
+      change: parseInt(roundScores.get(p.id) || "0", 10) || 0,
     }));
     
     const sum = scores.reduce((acc, s) => acc + s.change, 0);
@@ -62,12 +99,18 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
     }
 
     onAddRound(scores, ultiPlayerId, kontraPlayerId);
-    
-    setRoundScores(new Map());
-    setUltiPlayerId(null);
-    setKontraPlayerId(null);
     setDialogOpen(false);
   };
+
+  const handleDialogOpenChange = (isOpen: boolean) => {
+    setDialogOpen(isOpen);
+    if (isOpen) {
+        setRoundScores(new Map(players.map(p => [p.id, ""])));
+        setUltiPlayerId(null);
+        setKontraPlayerId(null);
+        setIsInitialInput(true);
+    }
+  }
   
   const getLeaderId = () => {
     if (players.length === 0) return null;
@@ -107,7 +150,7 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
       </div>
 
       <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
           <DialogTrigger asChild>
             <Button className="w-full sm:w-auto bg-accent hover:bg-accent/90">
               <PlusCircle className="mr-2 h-4 w-4" /> Új Kör Hozzáadása
@@ -132,6 +175,7 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
                     step="1"
                     placeholder="0"
                     className="col-span-3"
+                    value={roundScores.get(player.id) || ""}
                     onChange={(e) => handleScoreChange(player.id, e.target.value)}
                   />
                 </div>
