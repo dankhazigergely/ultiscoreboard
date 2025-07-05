@@ -45,42 +45,62 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
     const newScores = new Map(roundScores);
 
     if (isInitialInput) {
-      const score = parseInt(value, 10);
-      if (!isNaN(score) && score > 0) {
-        toast({
-          title: "Helytelen bevitel",
-          description: "Az első pontszámnak negatívnak kell lennie.",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      newScores.set(playerId, value);
-
-      if (!isNaN(score) && score < 0) {
-        const scoreToDistribute = -score;
-        const otherPlayers = players.filter(p => p.id !== playerId);
-        const numOtherPlayers = otherPlayers.length;
-
-        if (numOtherPlayers > 0) {
-            const baseScore = Math.floor(scoreToDistribute / numOtherPlayers);
-            let remainder = scoreToDistribute % numOtherPlayers;
-
-            otherPlayers.forEach((p) => {
-              const distributedScore = baseScore + (remainder > 0 ? 1 : 0);
-              newScores.set(p.id, String(distributedScore));
-              if (remainder > 0) {
-                remainder--;
-              }
-            });
-        }
-        setIsInitialInput(false);
-      }
+      // In initial mode, only allow one field to have a value.
+      // This ensures the blur event logic works on the first-filled input.
+      const newInitialScores = new Map<number, string>();
+      players.forEach(p => newInitialScores.set(p.id, "")); // Reset all
+      newInitialScores.set(playerId, value); // Set the current one
+      setRoundScores(newInitialScores);
     } else {
       newScores.set(playerId, value);
+      setRoundScores(newScores);
+    }
+  };
+  
+  const handleScoreBlur = (playerId: number) => {
+    if (!isInitialInput) return;
+
+    const value = roundScores.get(playerId);
+    if (!value || value.trim() === '') return;
+
+    const score = parseInt(value, 10);
+    if (isNaN(score)) return;
+
+    if (score >= 0) {
+      toast({
+        title: 'Helytelen bevitel',
+        description: 'Az első pontszámnak negatívnak kell lennie.',
+        variant: 'destructive',
+      });
+      // Clear all fields to restart the initial input process
+      const newScores = new Map<number, string>();
+      players.forEach(p => newScores.set(p.id, ""));
+      setRoundScores(newScores);
+      return;
+    }
+
+    // score < 0
+    const newScores = new Map(roundScores);
+    const scoreToDistribute = -score;
+    const otherPlayers = players.filter(p => p.id !== playerId);
+    const numOtherPlayers = otherPlayers.length;
+
+    if (numOtherPlayers > 0) {
+        const baseScore = Math.floor(scoreToDistribute / numOtherPlayers);
+        let remainder = scoreToDistribute % numOtherPlayers;
+
+        otherPlayers.forEach(p => {
+            const distributedScore = baseScore + (remainder > 0 ? 1 : 0);
+            newScores.set(p.id, String(distributedScore));
+            if (remainder > 0) {
+                remainder--;
+            }
+        });
     }
     setRoundScores(newScores);
+    setIsInitialInput(false);
   };
+
 
   const handleAddRoundSubmit = () => {
     const scores = players.map((p) => ({
@@ -177,6 +197,7 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame }:
                     className="col-span-3"
                     value={roundScores.get(player.id) || ""}
                     onChange={(e) => handleScoreChange(player.id, e.target.value)}
+                    onBlur={() => handleScoreBlur(player.id)}
                   />
                 </div>
               ))}
