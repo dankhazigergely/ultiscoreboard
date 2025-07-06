@@ -119,23 +119,45 @@ export default function Home() {
         <header className="text-center mb-8">
           <div className="flex items-center justify-center gap-4">
              <svg
-                className="w-20 h-16 text-primary"
-                viewBox="0 0 120 80"
+                className="w-14 h-20 text-primary"
+                viewBox="0 0 60 90"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
               >
-                <g transform="translate(15 10) rotate(-15 20 30)">
-                  <rect x="0" y="0" width="40" height="60" rx="4" className="fill-card stroke-current" strokeWidth="2" />
-                  <text x="5" y="18" fontFamily="serif" fontSize="16" fontWeight="bold" className="fill-current">F</text>
-                </g>
-                <g transform="translate(65 10) rotate(15 20 30)">
-                  <rect x="0" y="0" width="40" height="60" rx="4" className="fill-card stroke-current" strokeWidth="2" />
-                  <text x="5" y="18" fontFamily="serif" fontSize="16" fontWeight="bold" className="fill-current">A</text>
-                </g>
-                <g transform="translate(40 10)">
-                  <rect x="0" y="0" width="40" height="60" rx="4" className="fill-card stroke-current" strokeWidth="2" />
-                  <text x="5" y="18" fontFamily="serif" fontSize="16" fontWeight="bold" className="fill-current">K</text>
-                </g>
+                <rect
+                  x="1"
+                  y="1"
+                  width="58"
+                  height="88"
+                  rx="6"
+                  className="fill-card stroke-current"
+                  strokeWidth="2"
+                />
+                <text
+                  x="8"
+                  y="22"
+                  fontFamily="serif"
+                  fontSize="18"
+                  fontWeight="bold"
+                  fill="hsl(var(--destructive))"
+                >
+                  7
+                </text>
+                <path
+                  d="M30 65 C 15 50, 15 35, 30 45 C 45 35, 45 50, 30 65 Z"
+                  fill="hsl(var(--destructive))"
+                />
+                <text
+                  x="43"
+                  y="75"
+                  fontFamily="serif"
+                  fontSize="18"
+                  fontWeight="bold"
+                  fill="hsl(var(--destructive))"
+                  transform="rotate(180 52 66)"
+                >
+                  7
+                </text>
               </svg>
              <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-primary tracking-tight">
                UltiMóka
