@@ -118,47 +118,22 @@ export default function Home() {
       <div className="w-full max-w-5xl mx-auto">
         <header className="text-center mb-8">
           <div className="flex items-center justify-center gap-4">
-             <svg
-                className="w-14 h-20 text-primary"
-                viewBox="0 0 60 90"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <rect
-                  x="1"
-                  y="1"
-                  width="58"
-                  height="88"
-                  rx="6"
-                  className="fill-card stroke-current"
-                  strokeWidth="2"
-                />
-                <text
-                  x="8"
-                  y="22"
-                  fontFamily="serif"
-                  fontSize="18"
-                  fontWeight="bold"
-                  fill="hsl(var(--destructive))"
-                >
-                  7
-                </text>
-                <path
-                  d="M30 65 C 15 50, 15 35, 30 45 C 45 35, 45 50, 30 65 Z"
-                  fill="hsl(var(--destructive))"
-                />
-                <text
-                  x="43"
-                  y="75"
-                  fontFamily="serif"
-                  fontSize="18"
-                  fontWeight="bold"
-                  fill="hsl(var(--destructive))"
-                  transform="rotate(180 52 66)"
-                >
-                  7
-                </text>
-              </svg>
+            <svg
+              className="w-20 h-20 text-primary"
+              viewBox="0 0 100 100"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <g transform="translate(-10, 0) rotate(-10 50 50)">
+                  <rect x="25" y="20" width="50" height="70" rx="5" className="fill-card stroke-current" strokeWidth="2" />
+              </g>
+              <g>
+                  <rect x="25" y="20" width="50" height="70" rx="5" className="fill-card stroke-current" strokeWidth="2" />
+              </g>
+              <g transform="translate(10, 0) rotate(10 50 50)">
+                  <rect x="25" y="20" width="50" height="70" rx="5" className="fill-card stroke-current" strokeWidth="2" />
+              </g>
+            </svg>
              <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-primary tracking-tight">
                UltiMóka
              </h1>
