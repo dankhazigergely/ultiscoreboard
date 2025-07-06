@@ -54,9 +54,8 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame, o
   const [ultiPlayerId, setUltiPlayerId] = useState<number | null>(null);
 
   const mainPlayerId = selectedGamePlayerId ? parseInt(selectedGamePlayerId, 10) : null;
-  const activePlayers = players.length === 4 && sittingOutPlayerId
-    ? players.filter(p => String(p.id) !== sittingOutPlayerId)
-    : players;
+  const sittingOutPlayerIdNum = players.length === 4 && sittingOutPlayerId ? parseInt(sittingOutPlayerId, 10) : null;
+  const activePlayers = players.filter(p => p.id !== sittingOutPlayerIdNum);
   const otherActivePlayers = mainPlayerId !== null
     ? activePlayers.filter(p => p.id !== mainPlayerId)
     : [];
@@ -105,7 +104,6 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame, o
     }
 
     const mainPlayerIdNum = parseInt(selectedGamePlayerId, 10);
-    const sittingOutPlayerIdNum = players.length === 4 && sittingOutPlayerId ? parseInt(sittingOutPlayerId, 10) : null;
     const game = scoringData.find(g => g.id === parseInt(selectedGameId, 10));
 
     if (!game) return;
@@ -167,7 +165,6 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame, o
       return;
     }
     
-    const sittingOutPlayerIdNum = players.length === 4 && sittingOutPlayerId ? parseInt(sittingOutPlayerId, 10) : null;
     const gameIdNum = selectedGameId ? parseInt(selectedGameId, 10) : null;
     onAddRound(scores, ultiPlayerId, kontraPlayerIds, sittingOutPlayerIdNum, gameIdNum);
     setDialogOpen(false);
@@ -184,16 +181,18 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame, o
     };
     const getPlayerName = (id: number | null | undefined): string => players.find(p => p.id === id)?.name || '';
     const getKontraPlayerNames = (ids: number[] | null | undefined): string => (ids ? ids.map(id => getPlayerName(id)).join(', ') : '');
+    const getGameName = (id: number | null | undefined): string => scoringData.find(g => g.id === id)?.name || '';
 
-    const headers = ['Kör', ...players.map(p => escapeCsvCell(p.name)), 'Ultit mondta', 'Kontrát mondta', 'Kimaradt'].join(',');
+    const headers = ['Kör', ...players.map(p => escapeCsvCell(p.name)), 'Felvevő', 'Bemondás', 'Kontrát mondta', 'Kimaradt'].join(',');
     const rows = rounds.map(round => [
       round.roundNumber,
       ...players.map(p => round.scores.find(s => s.playerId === p.id)?.change || 0),
       escapeCsvCell(getPlayerName(round.ultiPlayerId)),
+      escapeCsvCell(getGameName(round.gameId)),
       escapeCsvCell(getKontraPlayerNames(round.kontraPlayerIds)),
       escapeCsvCell(getPlayerName(round.sittingOutPlayerId))
     ].join(','));
-    const totalsRow = ['Összesen', ...players.map(p => p.score), '', '', ''].join(',');
+    const totalsRow = ['Összesen', ...players.map(p => p.score), '', '', '', ''].join(',');
     let csvContent = headers + '\n' + rows.join('\n') + '\n' + totalsRow;
 
     const blob = new Blob([`\uFEFF${csvContent}`], { type: 'text/csv;charset=utf-8;' });
@@ -397,13 +396,13 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame, o
           </DialogContent>
         </Dialog>
         
-        <Button variant="outline" onClick={handleExportCSV} className="w-full sm:w-auto">
+        <Button variant="outline" onClick={handleExportCSV} className="w-full sm:w-auto bg-card text-card-foreground hover:bg-muted hover:text-muted-foreground">
             <Download className="mr-2 h-4 w-4" /> Exportálás (CSV)
         </Button>
 
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button variant="outline" disabled={rounds.length === 0} className="w-full sm:w-auto">
+            <Button variant="outline" disabled={rounds.length === 0} className="w-full sm:w-auto bg-card text-card-foreground hover:bg-muted hover:text-muted-foreground">
               <Trash2 className="mr-2 h-4 w-4" /> Utolsó kör törlése
             </Button>
           </AlertDialogTrigger>
