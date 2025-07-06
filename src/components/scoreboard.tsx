@@ -140,11 +140,10 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame, o
 
     setRoundScores(newScores);
 
-    if (game.name.toLowerCase().includes("ulti") || game.name.toLowerCase().includes("ultimó")) {
-      setUltiPlayerId(mainPlayerIdNum);
-    } else {
-      setUltiPlayerId(null);
-    }
+    // Set the declarer player ID. The property is misnamed 'ultiPlayerId'
+    // in the data structure, but it's used to store the declarer ('felvevő').
+    // This ensures the declarer is saved for all game types, not just 'ulti'.
+    setUltiPlayerId(mainPlayerIdNum);
 
     setStep(2);
   };
