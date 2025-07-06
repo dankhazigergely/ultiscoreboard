@@ -395,10 +395,6 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame, o
           </DialogContent>
         </Dialog>
         
-        <Button variant="outline" onClick={handleExportCSV} className="w-full sm:w-auto bg-card text-card-foreground hover:bg-muted hover:text-muted-foreground">
-            <Download className="mr-2 h-4 w-4" /> Exportálás (CSV)
-        </Button>
-
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button variant="outline" disabled={rounds.length === 0} className="w-full sm:w-auto bg-card text-card-foreground hover:bg-muted hover:text-muted-foreground">
@@ -440,7 +436,7 @@ export default function Scoreboard({ players, rounds, onAddRound, onResetGame, o
         </AlertDialog>
       </div>
       
-      <ScoreHistory players={players} rounds={rounds} />
+      <ScoreHistory players={players} rounds={rounds} onExportCSV={handleExportCSV} />
     </div>
   );
 }

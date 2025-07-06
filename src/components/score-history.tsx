@@ -4,8 +4,8 @@ import {
   Accordion,
   AccordionContent,
   AccordionItem,
-  AccordionTrigger,
 } from "@/components/ui/accordion";
+import * as AccordionPrimitive from "@radix-ui/react-accordion";
 import {
   Table,
   TableBody,
@@ -16,14 +16,17 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Swords, UserX } from "lucide-react";
+import { Swords, UserX, Download, ChevronDown } from "lucide-react";
+import { Button } from "./ui/button";
+import { cn } from "@/lib/utils";
 
 interface ScoreHistoryProps {
   players: Player[];
   rounds: Round[];
+  onExportCSV: () => void;
 }
 
-export default function ScoreHistory({ players, rounds }: ScoreHistoryProps) {
+export default function ScoreHistory({ players, rounds, onExportCSV }: ScoreHistoryProps) {
   if (rounds.length === 0) {
     return (
       <div className="text-center text-muted-foreground mt-8">
@@ -46,9 +49,21 @@ export default function ScoreHistory({ players, rounds }: ScoreHistoryProps) {
     <div className="mt-8">
       <Accordion type="single" collapsible defaultValue="item-1">
         <AccordionItem value="item-1">
-          <AccordionTrigger className="text-2xl font-bold text-primary hover:no-underline">
-            Játék Története
-          </AccordionTrigger>
+            <AccordionPrimitive.Header className="flex items-center justify-between py-4">
+                <AccordionPrimitive.Trigger className="flex items-center gap-2 text-2xl font-bold text-primary hover:underline [&[data-state=open]>svg]:rotate-180">
+                    <span>Játék Története</span>
+                    <ChevronDown className="h-5 w-5 shrink-0 transition-transform duration-200" />
+                </AccordionPrimitive.Trigger>
+                <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={onExportCSV}
+                    className="bg-card text-card-foreground hover:bg-muted hover:text-muted-foreground"
+                >
+                    <Download className="h-5 w-5" />
+                    <span className="sr-only">Exportálás (CSV)</span>
+                </Button>
+            </AccordionPrimitive.Header>
           <AccordionContent>
             <Card className="shadow-md">
               <CardContent className="p-0">
