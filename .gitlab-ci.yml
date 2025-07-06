@@ -34,5 +34,6 @@ deploy:
     - ssh-keyscan -H $DEPLOY_HOST >> ~/.ssh/known_hosts
   script:
     - scp -r out/* $DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH
+    - ssh $DEPLOY_USER@$DEPLOY_HOST "cd $DEPLOY_PATH && cd .. && rsync -a --delete ultimoka/ www/"
   only:
     - master
