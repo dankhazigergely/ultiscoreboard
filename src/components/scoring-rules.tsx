@@ -40,7 +40,6 @@ export default function ScoringRules() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[80px]">Sorszám</TableHead>
                   <TableHead>A játék neve</TableHead>
                   <TableHead className="text-right">A játék értéke</TableHead>
                 </TableRow>
@@ -48,7 +47,6 @@ export default function ScoringRules() {
               <TableBody>
                 {scoringData.map((item) => (
                   <TableRow key={item.id}>
-                    <TableCell className="font-medium">{item.id}</TableCell>
                     <TableCell>{item.name}</TableCell>
                     <TableCell className="text-right">{item.value}</TableCell>
                   </TableRow>
