@@ -63,7 +63,7 @@ export default function ScoreHistory({ players, rounds }: ScoreHistoryProps) {
                         <TableHead>Felvevő</TableHead>
                         <TableHead>Bemondás</TableHead>
                         <TableHead>Kontrák</TableHead>
-                        <TableHead>Kimaradt</TableHead>
+                        {players.length === 4 && <TableHead>Kimaradt</TableHead>}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -90,14 +90,16 @@ export default function ScoreHistory({ players, rounds }: ScoreHistoryProps) {
                                 </Badge>
                             )}
                           </TableCell>
-                          <TableCell>
-                             {round.sittingOutPlayerId !== null && round.sittingOutPlayerId !== undefined && (
-                                  <Badge variant="secondary" className="flex items-center gap-1 bg-gray-100 text-gray-800 border-gray-200">
-                                      <UserX className="h-3 w-3" />
-                                      <span className="hidden sm:inline">{getPlayerName(round.sittingOutPlayerId)}</span>
-                                  </Badge>
-                              )}
-                          </TableCell>
+                          {players.length === 4 && (
+                            <TableCell>
+                               {round.sittingOutPlayerId !== null && round.sittingOutPlayerId !== undefined && (
+                                    <Badge variant="secondary" className="flex items-center gap-1 bg-gray-100 text-gray-800 border-gray-200">
+                                        <UserX className="h-3 w-3" />
+                                        <span className="hidden sm:inline">{getPlayerName(round.sittingOutPlayerId)}</span>
+                                    </Badge>
+                                )}
+                            </TableCell>
+                          )}
                         </TableRow>
                       ))}
                     </TableBody>
